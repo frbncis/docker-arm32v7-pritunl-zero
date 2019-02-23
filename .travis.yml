@@ -1,0 +1,24 @@
+sudo: required
+services:
+- docker
+language: bash
+script:
+- |
+  echo "Updating Docker to have docker squash command"
+  curl https://get.docker.com | sh
+  echo "Enabling docker client experimental features"
+  echo '{"experimental":true}' | sudo tee /etc/docker/daemon.json
+  sudo service docker restart
+  docker version
+# build image
+- ./build.sh . -t frbncis/pritunl-zero
+# push image
+- >
+  if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
+    docker login -u="$DOCKER_USER" -p="$DOCKER_PASS"
+    docker push frbncis/pritunl-zero:latest
+  elif [ "$TRAVIS_BRANCH" == "develop" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
+    docker login -u="$DOCKER_USER" -p="$DOCKER_PASS"
+    docker tag frbncis/pritunl-zero:latest frbncis/pritunl-zero:develop
+    docker push frbncis/pritunl-zero:develop
+  fi
